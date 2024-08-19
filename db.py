@@ -124,8 +124,8 @@ def create_table():
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS product (
             id INTEGER PRIMARY KEY, 
-            name TEXT not null unique, 
-            price REAL not null, 
+            name TEXT not null unique,
+            price REAL not null,
             is_18_plus BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )

@@ -18,7 +18,12 @@ logger.setLevel(logging.DEBUG)
 def products_api():
     if request.method == "GET":
         start = datetime.now()
+
+        search_query = request.args.get('search')
         products = Product.select(Product, Category).join(Category)
+
+        if search_query:
+            products = products.where(Product.name.contains(search_query))
 
         resp = serialize_products(products)
         end = datetime.now()

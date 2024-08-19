@@ -61,3 +61,8 @@ class AppTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json["error"], "Price must be a number")
+
+    def test_products_search(self):
+        response = self.app.get("/products?search=Sprite")
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.json), 1)
