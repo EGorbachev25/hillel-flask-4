@@ -4,8 +4,7 @@ import random
 from peewee import SqliteDatabase
 
 from app import app
-from peewee_db import Product
-
+from peewee_db import Product, Category
 
 test_db = SqliteDatabase(":memory:")
 
@@ -19,21 +18,27 @@ class AppTestCase(unittest.TestCase):
         self.app.testing = True
 
         # Use test DB
-        test_db.bind([Product])
+        test_db.bind([Product, Category])
         test_db.connect()
-        test_db.create_tables([Product])
+        test_db.create_tables([Category, Product])
 
-        # Create duplicated product
-        Product.get_or_create(name="Duplicate", price=100)
+        # Create category and product
+        category = Category.create(name="Drinks")
+        Product.create(name="Duplicate", price=100, category=category)
+
+        # Debug output to check data insertion
+        products = Product.select()
+        print(f"Number of products in test DB: {products.count()}")
+        for product in products:
+            print(
+                f"Product: {product.name}, Price: {product.price}, Category: {product.category.name if product.category else 'None'}")
 
     def tearDown(self):
-        # Delete duplicated product
-        Product.delete().where(Product.name == "Duplicate").execute()
-        # Delete test products
-        Product.delete().where(Product.name.startswith("test_")).execute()
+        Product.delete().execute()
+        Category.delete().execute()
 
         # Close test DB
-        test_db.drop_tables([Product])
+        test_db.drop_tables([Product, Category])
         test_db.close()
 
     def test_products_get(self):
@@ -66,3 +71,20 @@ class AppTestCase(unittest.TestCase):
         response = self.app.get("/products?search=Sprite")
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.json), 1)
+
+    def test_delete_existing_product(self):
+        # Create a new product to delete
+        product = Product.create(name="test_delete_product", price=50)
+        response = self.app.delete(f"/products/{product.id}")
+
+        self.assertEqual(response.status_code, 204)
+
+        # Ensure the product is deleted
+        self.assertIsNone(Product.get_or_none(Product.id == product.id))
+
+    def test_delete_non_existing_product(self):
+        # Try to delete a non-existing product
+        response = self.app.delete("/products/777")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json["error"], "Product not found")
